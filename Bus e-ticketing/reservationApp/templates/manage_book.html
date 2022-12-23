@@ -1,0 +1,87 @@
+{% load customfilter %}
+{% load humanize %}
+<div class="container-fluid">
+    <form action=" " id="book-form">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ book.id }}">
+        <input type="hidden" name="code" value="1">
+        <input type="hidden" name="schedule" value="{{ schedule.id }}">
+        <div class="form-group mb-3">
+            <label for="name" class="control-label">Full Name</label>
+            <input class="form-control rounded-0" name="name" id="name" type="text" value="{{ book.name }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="seats" class="control-label">Number of Seats</label>
+            <input class="form-control rounded-0" name="seats" id="seats" max="{{ schedule.count_available|floatformat:0 }}" type="number" value="{{ book.seats }}" required>
+        </div>
+        <div class="form-group mb-3">
+            <label for="fare" class="control-label">Fare</label>
+            <input class="form-control rounded-0 text-end" id="fare" type="text" value="{{  schedule.fare|intcomma }}" disabled>
+        </div>
+        <div class="form-group mb-3">
+            <label for="payable" class="control-label">Payable Amount</label>
+            <input class="form-control rounded-0 text-end" id="payable" type="text" value="{% if book.total_payable %}{{ book.total_payable }}{% else %}0.00{% endif %}" disabled>
+        </div>
+    </form>
+</div>
+<script>
+    $(function() {
+        $('#seats').on('input change',function(){
+            var fare = $('#fare').val()
+                fare = fare.replace(/'/gi,'')
+            var seats = $(this).val()
+            var total = parseFloat(fare) * parseFloat(seats)
+            total = total > 0 ? total :0
+            $('#payable').val(parseFloat(total).toLocaleString('en-US'))
+        })
+        $('#category').select2({
+            width:"100%",
+            placeholder: "Please Select Category Here",
+            dropdownParent:$('#uni_modal')
+        })
+        $('#book-form').submit(function(e) {
+            e.preventDefault();
+            var _this = $(this)
+            $('.err-msg').remove();
+            var el = $('<div>')
+            el.addClass("alert alert-danger err-msg")
+            el.hide()
+            if (_this[0].checkValidity() == false) {
+                _this[0].reportValidity();
+                return false;
+            }
+            start_loader();
+            $.ajax({
+                url: "{% url 'save-book' %}",
+                data: new FormData($(this)[0]),
+                cache: false,
+                contentType: false,
+                processData: false,
+                method: 'POST',
+                type: 'POST',
+                dataType: 'json',
+                error: err => {
+                    console.log(err)
+                    alert("An error occured ", 'error');
+                    end_loader();
+                },
+                success: function(resp) {
+                    if (typeof resp == 'object' && resp.status == 'success') {
+                        el.removeClass("alert alert-danger err-msg ")
+                        location.reload()
+                    } else if (resp.status == 'failed' && !!resp.msg) {
+                        el.html(resp.msg)
+                    } else {
+                        el.text("An error occured ", 'error');
+                        end_loader();
+                        console.err(resp)
+                    }
+                    _this.prepend(el)
+                    el.show('slow')
+                    $("html, body, .modal ").scrollTop(0);
+                    end_loader()
+                }
+            })
+        })
+    })
+</script>

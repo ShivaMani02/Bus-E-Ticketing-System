@@ -1,0 +1,106 @@
+{% extends 'base.html' %} {% load humanize %} {% block pageContent %}
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+    <div class="card card-default rounded-0 shadow ">
+        <div class="card-header">
+            <div class="d-flex w-100 align-items-center justify-content-between">
+                <h4 class="card-title fw-bold">{% if not is_searched %}Scheduled Trip{% else %}Searched Trip Result{% endif %}</h4>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="container-fluid">
+                {% if is_searched %}
+                <fieldset>
+                    <legend>Looking for</legend>
+                    <dl class="row my-0">
+                        <dt class="col-auto fw-bold">Date:</dt>
+                        <dd class="col-auto flex-grow-1 flex-shrink-1">{{ data.date }}</dd>
+                    </dl>
+                    <dl class="row my-0">
+                        <dt class="col-auto fw-bold">Depart:</dt>
+                        <dd class="col-auto flex-grow-1 flex-shrink-1">{{ data.depart.location }}</dd>
+                    </dl>
+                    <dl class="row my-0">
+                        <dt class="col-auto fw-bold">Destination:</dt>
+                        <dd class="col-auto flex-grow-1 flex-shrink-1">{{ data.destination.location }}</dd>
+                    </dl>
+                </fieldset>
+                {% endif %}
+                <table class="table table-bordered" id="schedule-list">
+                    <colgroup>
+                        <col width="5%">
+                        <col width="15%">
+                        <col width="20%">
+                        <col width="30%">
+                        <col width="10%">
+                        <col width="10%">
+                        <col width="10%">
+                    </colgroup>
+                    <thead>
+                        <tr class="bg-gradient bg-primary bg-opacity-50 text-light">
+                            <th class="px-2 py-2 text-center">#</th>
+                            <th class="px-2 py-2 text-center">Available Seats</th>
+                            <th class="px-2 py-2 text-center">Schedule/Bus</th>
+                            <th class="px-2 py-2 text-center">Route (From - To)</th>
+                            <th class="px-2 py-2 text-center">Fare</th>
+                            <th class="px-2 py-2 text-center">Status</th>
+                            <th class="px-2 py-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td class="px-2 py-1 align-middle">{{ forloop.counter }}</td>
+                            <td class="px-2 py-1 align-middle text-center">{{ schedule.count_available|floatformat:0|intcomma }}</td>
+                            <td class="px-2 py-1 align-middle">
+                                <div class="lh-1">
+                                    <div>{{ schedule.schedule|date:"Y-m-d h:i A" }}</div>
+                                    <div>{{ schedule.bus.bus_number }}</div>
+                                    <small class="text-muted">{{ schedule.bus.category }}</small>
+                                </div>
+                            </td>
+                            <td class="px-2 py-1 align-middle">
+                                <div class="lh-1">
+                                    <div>{{ schedule.depart }}</div>
+                                    <div>{{ schedule.destination }}</div>
+                                </div>
+                            </td>
+                            <td class="px-2 py-1 align-middle text-end">{{ schedule.fare|intcomma }}</td>
+                            <td class="px-1 py-1 align-middle text-center">
+                                {% if schedule.status == '1' %}
+                                <span class="badge bg-primary bg-gradient rounded-pill px-2">Active</span> {% else %}
+                                <span class="badge bg-danger bg-gradient rounded-pill px-2">Cancelled</span> {% endif %}
+                            </td>
+                            <td class="px-2 py-1 align-middle text-center">
+                                <button class="btn btn-outline-primary btn-sm book-data" type="button" data-id="{{ schedule.pk }}" title="Book Now">
+                                    <i class="fa fa-ticket-alt"></i> Book
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %} {% block ScriptBlock %}
+<script>
+    $(function() {
+        $('.book-data').click(function() {
+            uni_modal("Booking Form", '{%  url "manage-booking" %}/' + $(this).attr('data-id'), 'mid-large')
+        })
+        $('#schedule-list').DataTable({
+            columnDefs: [{
+                orderable: false,
+                targets: 6
+            }],
+            initComplete: function(settings, json) {
+                $('table td, table th').addClass('px-2 py-1')
+            },
+            drawCallback: function(settings) {
+                $('table td, table th').addClass('px-2 py-1')
+            }
+        })
+    })
+</script>
+{% endblock ScriptBlock %}
